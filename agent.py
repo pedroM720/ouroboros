@@ -9,13 +9,17 @@ class AdaptiveAgent:
     def __init__(self):
         self.tools = {}
         self.tool_gen = ToolGenerationTool(ToolConstructor())
+        self.tools["generateTool"] = self.generateTool
 
     def use_tool(self, name, *args, **kwargs):
         if name not in self.tools:
             code = self.generate_tool_code(name, *args, **kwargs)
-            func = self.tool_gen.generate(name, code)
+            func = self.use_tool("generateTool", name, code)
             self.tools[name] = func
         return self.tools[name](*args, **kwargs)
+
+    def generateTool(self, name, code):
+        return self.tool_gen.generate(name, code)
 
     def generate_tool_code(self, name, *args, **kwargs):
         if name == "word_count":
