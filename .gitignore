@@ -1,4 +1,5 @@
 .env
 generated-tools/*
+!generated-tools/.gitkeep
 __pycache__/*
 .trae/*
