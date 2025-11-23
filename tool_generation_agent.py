@@ -11,7 +11,8 @@ class ToolGenerationAgent(BaseAgent):
         "freely available search API to query from and write a function that calls that API." \
         "In addition to outputting the function, create another asynchronous function called `run` that calls the function with the same inputs. This is for compatability." \
         "Your run code should only take string inputs. If necessary, parse the input before running it through any logic." \
-        "You are permitted to import non standard pip modules. To do so, list pip modules in a commment at the end of your code output in a space separated list beginning with \"install modules:\"")
+        "You are permitted to import non standard pip modules. To do so, list pip modules in a commment at the end of your code output in a space separated list beginning with \"install modules:\"" \
+        "If ever you have to query an external API, prefer pip modules to manual http requests.")
         self.max_steps=5
 
     async def step(self, run_id=None) -> str:

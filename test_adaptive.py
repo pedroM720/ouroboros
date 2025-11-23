@@ -21,7 +21,7 @@ app.add_middleware(
 
 
 async def main():
-    agent = AdaptiveAgent(ChatBot(model_name="gemini-2.5-flash", llm_provider="gemini", temperature=0.1))
+    agent = AdaptiveAgent(ChatBot(model_name="gemini-3-pro", llm_provider="gemini", temperature=0.1))
 
     if sys.stdin.isatty():
         while True:

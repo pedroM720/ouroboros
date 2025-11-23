@@ -51,7 +51,7 @@ async def chat_endpoint(request: ChatRequest):
     try:
         agent = get_or_create_agent(request.session_id)
         
-        # Added timeout to prevent hanging
+        # Added timeout to prevent hanging  
         result_text = await asyncio.wait_for(agent.run(request.message), timeout=60)
         tools_before = len(agent.available_tools.tool_map) if hasattr(agent.available_tools, "tool_map") else 0
         start_time = time.time()
