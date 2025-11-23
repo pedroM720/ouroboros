@@ -3,7 +3,7 @@ from spoon_ai.tools.tool_manager import ToolManager
 from spoon_ai.chat import ChatBot
 from generation_tool import GenerationTool
 from dynamic_tool_loader import load_generated_tools
-
+# adpative agent 
 class AdaptiveAgent(ToolCallAgent):
     name: str = "adaptive_agent"
     description: str = "User-facing assistant"

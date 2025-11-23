@@ -1,2 +1,5 @@
 spoon-ai-sdk
 spoon-toolkits
+fastapi
+uvicorn
+pydantic

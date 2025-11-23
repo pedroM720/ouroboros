@@ -2,6 +2,23 @@ import sys
 import asyncio
 from spoon_ai.chat import ChatBot
 from adaptive_agent import AdaptiveAgent
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+#test adaptive
+app = FastAPI()
+
+origins = [
+    "http://localhost:3000",  # allow local react app
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 async def main():
     agent = AdaptiveAgent(ChatBot(model_name="gemini-2.5-flash", llm_provider="gemini", temperature=0.1))
