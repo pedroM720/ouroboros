@@ -1,8 +1,9 @@
+import os
 from spoon_ai.agents import ToolCallAgent
 from spoon_ai.tools.tool_manager import ToolManager
 from spoon_ai.chat import ChatBot
-from generation_tool import GenerationTool
-from dynamic_tool_loader import load_generated_tools
+from dynamic_tool_loader import load_tool
+from generation_tool import GenerationTool, ReTool
 # adpative agent 
 class AdaptiveAgent(ToolCallAgent):
     name: str = "adaptive_agent"
@@ -23,18 +24,17 @@ class AdaptiveAgent(ToolCallAgent):
 
     def __init__(self, llm: ChatBot):
         tool_manager = ToolManager([])
-        tool_manager.add_tool(GenerationTool(llm))
+        tool_manager.add_tool(GenerationTool(llm, tool_manager))
+        tool_manager.add_tool(ReTool(llm, tool_manager))
         super().__init__(llm=llm, available_tools=tool_manager)
         self._default_timeout = 300
+        self.initialize()
 
     def initialize(self):
         try:
-            print("Attempting to load new tools.")
-            load_generated_tools(self.available_tools)
+            for file in os.listdir("generated-tools"):
+                if file.endswith(".py"):
+                    load_tool(self.available_tools, os.path.join("generated-tools", file), file)
         except Exception as e:
             print(e)
             pass
-
-    async def step(self):
-        self.initialize()
-        await super().step()
