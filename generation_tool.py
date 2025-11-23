@@ -146,7 +146,7 @@ class GenerationTool(BaseTool):
         for line in final_code.splitlines():
             line = line.strip()
             if line.startswith("# install modules:"):
-                line = line.removeprefix("# install modules:")
+                line = line.removeprefix("# install modules:").strip()
                 for module in line.split(" "):
                     install_package(module)
 
