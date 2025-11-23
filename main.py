@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from spoon_ai.chat import ChatBot
 from adaptive_agent import AdaptiveAgent
+import time
 
 app = FastAPI()
 
@@ -31,6 +32,8 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     tools: List[str]
+    is_reflex: bool
+    time_taken: float
 
 # 3. SESSION MANAGEMENT
 agent_sessions: Dict[str, AdaptiveAgent] = {}
@@ -50,6 +53,13 @@ async def chat_endpoint(request: ChatRequest):
         
         # Added timeout to prevent hanging
         result_text = await asyncio.wait_for(agent.run(request.message), timeout=60)
+        tools_before = len(agent.available_tools.tool_map) if hasattr(agent.available_tools, "tool_map") else 0
+        start_time = time.time()
+        result_text = await asyncio.wait_for(agent.run(request.message), timeout=60) # idk if this is right 
+        duration = time.time() - start_time
+
+        tools_after = len(agent.available_tools.tool_map) if hasattr(agent.available_tools, "tool_map") else 0
+        is_reflex = tools_after == tools_before
         
         current_tools = []
         if hasattr(agent.available_tools, "tool_map"):
@@ -57,7 +67,9 @@ async def chat_endpoint(request: ChatRequest):
         
         return ChatResponse(
             response=str(result_text),
-            tools=current_tools
+            tools=current_tools,
+            is_reflex = is_reflex,
+            time_taken = duration
         )
 
     except Exception as e:
