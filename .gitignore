@@ -1,0 +1,4 @@
+.env
+generated-tools/*
+__pycache__/*
+.trae/*
