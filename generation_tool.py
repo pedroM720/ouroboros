@@ -143,13 +143,12 @@ class GenerationTool(BaseTool):
             print(f"Problem: {e.text}")
             return "Failed to generate code. Try again, or if this fails consistently, this may not be possible."
 
-        for module in imports:
-            module = module.removeprefix("import ")
-            module = module.removeprefix("from ")
-
-            split = module.split(" ")
-            split = split[0].split(".")
-            install_package(split[0])
+        for line in final_code.splitlines():
+            line = line.strip()
+            if line.startswith("# install modules:"):
+                line = line.removeprefix("# install modules:")
+                for module in line.split(" "):
+                    install_package(module)
 
         out_dir = os.path.join(os.getcwd(), "generated-tools")
         os.makedirs(out_dir, exist_ok=True)

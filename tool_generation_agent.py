@@ -9,9 +9,9 @@ class ToolGenerationAgent(BaseAgent):
         "The tool should be a python function that takes in the specified inputs, and outputs the specified outputs as a tuple." \
         "Never output code that wold not run in production - no example cases or anything. For example, if you are asked to create a search API, you should find a" \
         "freely available search API to query from and write a function that calls that API." \
+        "In addition to outputting the function, create another asynchronous function called `run` that calls the function with the same inputs. This is for compatability." \
         "Your run code should only take string inputs. If necessary, parse the input before running it through any logic." \
-        "You are permitted to import non standard pip modules." \
-        "In addition to outputting the function, create another asynchronous function called `run` that calls the function with the same inputs. This is for compatability.")
+        "You are permitted to import non standard pip modules. To do so, list pip modules in a commment at the end of your code output in a space separated list beginning with \"install modules:\"")
         self.max_steps=5
 
     async def step(self, run_id=None) -> str:
