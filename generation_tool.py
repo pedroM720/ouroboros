@@ -46,14 +46,17 @@ def _extract_latest_step_code(text: str) -> str:
         return blocks[-1].strip()
     return tail.strip()
 name: str = "generation_tool"
-description: str = "Generate a BaseTool class file from agent output, preserving imports and run()"
+description: str = "Generates a tool class file from a description. This should be used for any complex tasks that an LLM may not have reliable accuracy on, or things that require external APIs or arbitrary code execution."
 parameters: dict = {
         "type": "object",
         "properties": {
-            "spec": {"type": "string", "description": "Task generation spec or raw code"},
-            "class_name": {"type": "string", "description": "Generated tool class name"}
+            "name": {"type": "string", "description": "The name of the function. Distinct from class_name."},
+            "description": {"type": "string", "description": "Natural language description. Example: A tool that shuffles a string."},
+            "inputs": {"type": "string", "description": "Comma separated list of inputs and types. Example: query: str, api-token: str"},
+            "outputs": {"type": "string", "description": "Comma separated list of outputs and types. Example: name: str, id: str"},
+            "class_name": {"type": "string", "description": "Generated tool class name."}
     },
-    "required": ["spec", "input"]
+    "required": ["name", "description", "inputs", "outputs", "class_name"]
 }
 class GenerationTool(BaseTool):
     agent: ToolGenerationAgent = None
@@ -65,8 +68,10 @@ class GenerationTool(BaseTool):
     async def _generate_code(self, spec: str) -> str:
         return await self.agent.run(spec)
 
-    async def execute(self, spec: str, class_name: str = "GeneratedTaskTool") -> str:
-        raw = await self._generate_code(spec)
+    async def execute(self, name: str, description: str, inputs: str, outputs: str, class_name: str = "GeneratedTaskTool") -> str:
+        print(f"Attempting to generate {class_name}.")
+        print(f"name: \"{name}\", description: \"{description}\", inputs: \"{inputs}\", outputs: \"{outputs}\"")
+        raw = await self._generate_code(f"name: \"{name}\", description: \"{description}\", inputs: \"{inputs}\", outputs: \"{outputs}\"")
         latest = _extract_latest_step_code(raw)
         cleaned = _strip_code_fences(latest)
         imports, body = _extract_imports_and_body(cleaned)
@@ -75,27 +80,53 @@ class GenerationTool(BaseTool):
         assembled_parts.append("\n".join(header).strip())
         if body:
             assembled_parts.append("\n" + body + "\n")
+        # Parse inputs into JSON schema properties
+        properties = {}
+        required = []
+        exec_params = []
+        if inputs.strip():
+            for inp in inputs.split(","):
+                inp = inp.strip()
+                if ":" in inp:
+                    varName, typ = inp.split(":", 1)
+                    varName = varName.strip()
+                    typ = typ.strip()
+                    json_type = "string"
+                    if typ in ("int", "float"):
+                        json_type = "number"
+                    elif typ == "bool":
+                        json_type = "boolean"
+                    elif typ == "list":
+                        json_type = "array"
+                    properties[varName] = {"type": json_type, "description": f"{varName}"}
+                    required.append(varName)
+                    exec_params.append(varName)
+
         tool_class = (
             f"class {class_name}(BaseTool):\n"
-            f"    name: str = \"{class_name.replace('Tool', '').lower()}\"\n"
-            f"    description: str = \"Generated task tool\"\n"
+            f"    name: str = \"{name}\"\n"
+            f"    description: str = {repr(description)}\n"
             f"    parameters: dict = {{\n"
             f"        \"type\": \"object\",\n"
             f"        \"properties\": {{\n"
-            f"            \"input\": {{\"type\": \"string\", \"description\": \"Input for run()\"}}\n"
+            + "".join([f"            \"{k}\": {repr(v)},\n" for k, v in properties.items()]).rstrip(",\n") + "\n"
             f"        }},\n"
-            f"        \"required\": [\"input\"]\n"
+            f"        \"required\": {required}\n"
             f"    }}\n"
-            f"    async def execute(self, input: str) -> str:\n"
-            f"        return await run(input)\n"
+            f"    async def execute(self, {', '.join(exec_params)}) -> str:\n"
+            f"        return await run({', '.join(exec_params)})\n"
         )
+
         assembled_parts.append(tool_class)
         final_code = "\n".join(assembled_parts)
         
         try:
             compile(final_code, "<string>", "exec")
         except SyntaxError as e:
-            return "Failed to generate code. Task may not be feasible for current generation models."
+            print(f"SyntaxError: {e.msg}")
+            print(f"Line: {e.lineno}")
+            print(f"Problem: {e.text}")
+            return "Failed to generate code. Try again, or if this fails consistently, this may not be possible."
 
         out_dir = os.path.join(os.getcwd(), "generated-tools")
         os.makedirs(out_dir, exist_ok=True)
@@ -103,5 +134,5 @@ class GenerationTool(BaseTool):
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(final_code)
 
-        return "Successfully generated tool."
+        return f"Successfully generated tool with name {name}"
         

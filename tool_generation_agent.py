@@ -7,7 +7,10 @@ class ToolGenerationAgent(BaseAgent):
         super().__init__(name="john", llm=llm, system_prompt="You are a tool generation agent. " \
         "You are given a description of a tool and you need to generate the tool. " \
         "The tool should be a python function that takes in the specified inputs, and outputs the specified outputs as a tuple." \
-        "In addition to outputting the function, create another asynchronous function called `run` that calls the function with the same inputs. This is for compatability")
+        "Never output code that wold not run in production - no example cases or anything. For example, if you are asked to create a search API, you should find a" \
+        "freely available search API to query from and write a function that calls that API." \
+        "Your run code should only take string inputs. If necessary, parse the input before running it through any logic." \
+        "In addition to outputting the function, create another asynchronous function called `run` that calls the function with the same inputs. This is for compatability.")
         self.max_steps=5
 
     async def step(self, run_id=None) -> str:
