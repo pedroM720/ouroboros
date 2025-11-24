@@ -4,7 +4,6 @@ from spoon_ai.tools.tool_manager import ToolManager
 from spoon_ai.chat import ChatBot
 from dynamic_tool_loader import load_tool
 from generation_tool import GenerationTool, ReTool
-from dynamic_tool_loader import load_generated_tools
 # adpative agent 
 class AdaptiveAgent(ToolCallAgent):
     name: str = "adaptive_agent"
@@ -24,34 +23,18 @@ class AdaptiveAgent(ToolCallAgent):
     max_steps: int = 10
 
     def __init__(self, llm: ChatBot):
-        # 1. Create the tool instance manually
-        gen_tool = GenerationTool(llm)
-        
-        # DEBUG: Verify gen_tool is an object, not a string
-        print(f"DEBUG: gen_tool type: {type(gen_tool)}")
-        
-        # 2. FIX: Pass it as a LIST [gen_tool]. 
-        # The parent class 'ToolCallAgent' will internally create the ToolManager.
-        # DO NOT pass a ToolManager instance here.
-        super().__init__(llm=llm, available_tools=[gen_tool])
-        
+        tool_manager = ToolManager([])
+        tool_manager.add_tool(GenerationTool(llm, tool_manager))
+        tool_manager.add_tool(ReTool(llm, tool_manager))
+        super().__init__(llm=llm, available_tools=tool_manager)
         self._default_timeout = 300
+        self.initialize()
 
     def initialize(self):
         try:
-            print("Attempting to load new tools.")
-            # Check if available_tools exists and is the right type before loading
-            if hasattr(self, "available_tools"):
-                 # If the parent class converted the list to a ToolManager, use it
-                if isinstance(self.available_tools, ToolManager):
-                    load_generated_tools(self.available_tools)
-                # Fallback if it's still a list (unlikely with this library, but safe)
-                elif isinstance(self.available_tools, list):
-                    pass 
+            for file in os.listdir("generated-tools"):
+                if file.endswith(".py"):
+                    load_tool(self.available_tools, os.path.join("generated-tools", file), file)
         except Exception as e:
-            print(f"Tool loading warning: {e}")
+            print(e)
             pass
-
-    async def step(self):
-        self.initialize()
-        await super().step()
